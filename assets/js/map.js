@@ -116,13 +116,24 @@ export function setupCustomDrag(mapBase, mapOverlay, state) {
         const dy = e.clientY - lastY;
         
         if (dragMapInstance === mapOverlay) {
-            // Handle rotation for overlay pan
-            const rad = state.currentRotation * (Math.PI / 180);
-            const mapDx = dx * Math.cos(-rad) - dy * Math.sin(-rad);
-            const mapDy = dx * Math.sin(-rad) + dy * Math.cos(-rad);
-            mapOverlay.panBy([-mapDx, -mapDy], { animate: false });
+            if (e.altKey) {
+                // Rotation Mode: horizontal movement changes degrees
+                const sensitivity = 0.5; 
+                let newRot = state.currentRotation + (dx * sensitivity);
+                
+                // Keep within slider range or just let it go and math handles it
+                // setRotation wraps it to state.currentRotation
+                state.rangeRot.value = Math.round(newRot);
+                setRotation(state.rangeRot.value, state);
+            } else {
+                // Panning Mode: standard rotated pan logic
+                const rad = state.currentRotation * (Math.PI / 180);
+                const mapDx = dx * Math.cos(-rad) - dy * Math.sin(-rad);
+                const mapDy = dx * Math.sin(-rad) + dy * Math.cos(-rad);
+                mapOverlay.panBy([-mapDx, -mapDy], { animate: false });
+            }
         } else {
-            // Standard pan for base
+            // Standard move for base map
             mapBase.panBy([-dx, -dy], { animate: false });
         }
 
