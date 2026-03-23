@@ -44,7 +44,9 @@
     <div id="ui-panel" class="control-panel fixed bg-white/95 backdrop-blur-sm shadow-2xl border-gray-200 p-4 overflow-y-auto overflow-x-hidden transition-all duration-300">
         
         <!-- Mobile/Tablet Grab Handle -->
-        <div class="h-1.5 w-12 bg-gray-300 rounded-full mx-auto mb-4 show-on-drawer-only"></div>
+        <button id="btn-handle" class="w-full py-2 mb-2 show-on-drawer-only flex justify-center focus:outline-none" title="Toggle Drawer">
+            <div class="h-1.5 w-12 bg-gray-300 rounded-full hover:bg-gray-400 transition-colors"></div>
+        </button>
 
         <!-- Header -->
         <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
@@ -95,6 +97,7 @@
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </button>
                 </div>
+                <button id="btn-go-overlay" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded shadow-sm hover:bg-blue-700 show-on-drawer-only">Go</button>
             </div>
 
             <!-- Style, Opacity, Rotation, Tint -->
@@ -141,7 +144,7 @@
 
         <!-- Section: Base Map (Bottom) -->
         <div class="relative group">
-            <div class="absolute -left-4 top-4 bottom-4 w-1 bg-gray-400 rounded-r"></div>
+            <div class="absolute -left-4 top-4 bottom-4 w-1 bg-purple-500 rounded-r"></div>
             <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 pl-2 lg:pl-2">Bottom Layer (Base)</h2>
             
             <!-- Search Base -->
@@ -149,10 +152,11 @@
                 <div class="relative flex-1">
                     <input type="text" id="search-base" placeholder="Loc: Paris" 
                         class="w-full px-3 py-1.5 pr-8 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-500 focus:outline-none">
-                    <button id="btn-search-base" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                    <button id="btn-search-base" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-500 p-1">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </button>
                 </div>
+                <button id="btn-go-base" class="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded shadow-sm hover:bg-purple-700 show-on-drawer-only">Go</button>
             </div>
 
             <select id="select-base" class="w-full p-2 bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded focus:ring-gray-500 block"></select>
@@ -177,7 +181,7 @@
 
         <div class="mt-4 pt-3 border-t border-gray-100 text-[10px] text-gray-400 text-center">
             Note: Drag maps independently to align features. <br/>
-            <span class="text-blue-400 font-medium lg:block">Tip: Ctrl + Drag for other map, Alt + Drag to rotate.</span>
+            <span class="text-gray-400 font-medium lg:block">Tip: Ctrl + Drag for other map, Alt + Drag to rotate.</span>
         </div>
     </div>
 

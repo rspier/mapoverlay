@@ -182,5 +182,16 @@ document.getElementById('search-overlay').onkeypress = (e) => {
     }
 };
 
+// New Mobile Search Buttons
+document.getElementById('btn-go-base').onclick = () => {
+    utils.searchLocation(document.getElementById('search-base').value, mapBase, state, true);
+};
+document.getElementById('btn-go-overlay').onclick = () => {
+    utils.searchLocation(document.getElementById('search-overlay').value, mapOverlay, state, false);
+};
+
+// Drawer Handle Interaction
+document.getElementById('btn-handle').onclick = () => ui.toggleSidebar(state.uiPanel, state.iconCollapse);
+
 // Start
 initApp();

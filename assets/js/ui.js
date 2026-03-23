@@ -12,7 +12,7 @@ export function setControlMode(mode, state) {
         divOverlay.classList.add('interaction-disabled');
         divOverlay.classList.remove('interaction-enabled');
         state.mapBase.dragging.enable();
-        btnBase.className = "flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors bg-blue-500 text-white shadow-sm";
+        btnBase.className = "flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors bg-purple-600 text-white shadow-sm";
         btnOverlay.className = "flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors text-gray-600 hover:bg-gray-50";
     } else {
         divOverlay.classList.remove('interaction-disabled');

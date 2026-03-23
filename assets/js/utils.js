@@ -126,7 +126,7 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
 
             if (boundaryGeoJSON && (boundaryGeoJSON.type === 'Polygon' || boundaryGeoJSON.type === 'MultiPolygon')) {
                 if (isBaseMap) {
-                    state.searchMarkerBase = L.geoJSON(boundaryGeoJSON, { style: { ...common, color: '#ef4444' } }).addTo(state.mapBase);
+                    state.searchMarkerBase = L.geoJSON(boundaryGeoJSON, { style: { ...common, color: '#a855f7' } }).addTo(state.mapBase);
                 } else {
                     state.searchMarkerOverlay = L.geoJSON(boundaryGeoJSON, { style: { ...common, color: '#3b82f6' } }).addTo(state.mapOverlay);
                 }
