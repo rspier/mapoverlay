@@ -195,5 +195,18 @@ document.getElementById('btn-go-overlay').onclick = () => {
 // Drawer Handle Interaction
 document.getElementById('btn-handle').onclick = () => ui.toggleSidebar(state.uiPanel, state.iconCollapse);
 
+// Clear Search Buttons
+document.getElementById('btn-clear-base').onclick = () => utils.clearSearch(mapBase, state, true);
+document.getElementById('btn-clear-overlay').onclick = () => utils.clearSearch(mapOverlay, state, false);
+
+// Toggle Clear buttons on typing
+['search-base', 'search-overlay'].forEach(id => {
+    const input = document.getElementById(id);
+    const clearBtnId = id === 'search-base' ? 'btn-clear-base' : 'btn-clear-overlay';
+    input.addEventListener('input', () => {
+        document.getElementById(clearBtnId).classList.toggle('hidden', input.value === '');
+    });
+});
+
 // Start
 initApp();

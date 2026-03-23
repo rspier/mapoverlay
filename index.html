@@ -92,10 +92,15 @@
             <div class="flex gap-2 mb-2">
                 <div class="relative flex-1">
                     <input type="text" id="search-overlay" placeholder="Loc: New York" 
-                        class="w-full px-3 py-1.5 pr-8 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none">
-                    <button id="btn-search-overlay" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 p-1">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    </button>
+                        class="w-full px-3 py-1.5 pr-14 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                    <div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
+                        <button id="btn-clear-overlay" class="text-gray-300 hover:text-red-500 p-1 hidden" title="Clear Search">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                        <button id="btn-search-overlay" class="text-gray-400 hover:text-blue-500 p-1">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <button id="btn-go-overlay" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded shadow-sm hover:bg-blue-700 show-on-drawer-only">Go</button>
             </div>
@@ -151,10 +156,15 @@
             <div class="flex gap-2 mb-2">
                 <div class="relative flex-1">
                     <input type="text" id="search-base" placeholder="Loc: Paris" 
-                        class="w-full px-3 py-1.5 pr-8 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-500 focus:outline-none">
-                    <button id="btn-search-base" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-500 p-1">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    </button>
+                        class="w-full px-3 py-1.5 pr-14 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-500 focus:outline-none">
+                    <div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
+                        <button id="btn-clear-base" class="text-gray-300 hover:text-red-500 p-1 hidden" title="Clear Search">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                        <button id="btn-search-base" class="text-gray-400 hover:text-purple-500 p-1">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <button id="btn-go-base" class="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded shadow-sm hover:bg-purple-700 show-on-drawer-only">Go</button>
             </div>

@@ -201,5 +201,30 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
         if (wasSynced) state.syncCheckbox.checked = true;
     }
     
+    // Show clear button
+    const clearBtnId = isBaseMap ? 'btn-clear-base' : 'btn-clear-overlay';
+    document.getElementById(clearBtnId).classList.remove('hidden');
+
+    debouncedUpdateURL(state);
+}
+
+export function clearSearch(targetMap, state, isBaseMap = false) {
+    if (isBaseMap) {
+        if (state.searchMarkerBase) state.mapBase.removeLayer(state.searchMarkerBase);
+        if (state.searchLabelBase) state.mapBase.removeLayer(state.searchLabelBase);
+        state.searchMarkerBase = null;
+        state.searchLabelBase = null;
+        state.searchQueryBase = "";
+        document.getElementById('search-base').value = "";
+        document.getElementById('btn-clear-base').classList.add('hidden');
+    } else {
+        if (state.searchMarkerOverlay) state.mapOverlay.removeLayer(state.searchMarkerOverlay);
+        if (state.searchLabelOverlay) state.mapOverlay.removeLayer(state.searchLabelOverlay);
+        state.searchMarkerOverlay = null;
+        state.searchLabelOverlay = null;
+        state.searchQueryOverlay = "";
+        document.getElementById('search-overlay').value = "";
+        document.getElementById('btn-clear-overlay').classList.add('hidden');
+    }
     debouncedUpdateURL(state);
 }
