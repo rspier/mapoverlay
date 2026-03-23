@@ -69,7 +69,7 @@ function initApp() {
 
     // Defaults or Params
     state.selBase.value = params.get('b') || 7;
-    state.selOverlay.value = params.get('o') || 0;
+    state.selOverlay.value = params.get('o') || 5;
 
     const op = params.get('op') || 0.7;
     state.rangeOpacity.value = op;
