@@ -42,11 +42,21 @@ export async function copyShareLink(state) {
     updateURL(state); 
     const fullURL = `${window.location.origin}${window.location.pathname}?${state.latestQueryString}`;
     
+    // Build dynamic title based on search queries
+    let shareTitle = "Map Layer Comparator";
+    if (state.searchQueryBase && state.searchQueryOverlay) {
+        shareTitle = `${state.searchQueryBase} vs ${state.searchQueryOverlay}`;
+    } else if (state.searchQueryBase) {
+        shareTitle = state.searchQueryBase;
+    } else if (state.searchQueryOverlay) {
+        shareTitle = state.searchQueryOverlay;
+    }
+
     if (navigator.share) {
         try {
             await navigator.share({
-                title: 'Map Layer Comparator',
-                text: 'Compare map layers side-by-side with rotation and transparency.',
+                title: shareTitle,
+                text: `Comparing ${shareTitle} using Map Layer Comparator.`,
                 url: fullURL
             });
         } catch (err) {
