@@ -38,18 +38,31 @@ export function debouncedUpdateURL(state) {
     timeoutId = setTimeout(() => updateURL(state), 500);
 }
 
-export function copyShareLink(state) {
+export async function copyShareLink(state) {
     updateURL(state); 
     const fullURL = `${window.location.origin}${window.location.pathname}?${state.latestQueryString}`;
     
-    navigator.clipboard.writeText(fullURL).then(() => {
-        const btn = document.getElementById('btn-share');
-        btn.classList.add('text-green-600');
-        setTimeout(() => btn.classList.remove('text-green-600'), 1000);
-    }).catch(err => {
-        console.error("Clipboard failed", err);
-        alert("Link: " + fullURL);
-    });
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Map Layer Comparator',
+                text: 'Compare map layers side-by-side with rotation and transparency.',
+                url: fullURL
+            });
+        } catch (err) {
+            console.warn("Share failed", err);
+        }
+    } else {
+        // Fallback to Clipboard
+        navigator.clipboard.writeText(fullURL).then(() => {
+            const btn = document.getElementById('btn-share');
+            btn.classList.add('text-green-600');
+            setTimeout(() => btn.classList.remove('text-green-600'), 1000);
+        }).catch(err => {
+            console.error("Clipboard failed", err);
+            alert("Link: " + fullURL);
+        });
+    }
 }
 
 export async function searchLocation(query, targetMap, state, isBaseMap = false) {
