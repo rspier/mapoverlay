@@ -46,7 +46,9 @@ const state = {
 // Initialize Maps
 const mapBase = L.map('map-base', {
     zoomControl: false,
-    attributionControl: false
+    attributionControl: false,
+    zoomSnap: 0.1,
+    zoomDelta: 0.5
 }).setView(mapConfig.center, mapConfig.zoom);
 mapBase.createPane('boundaryPane').style.zIndex = '650';
 mapBase.getPane('boundaryPane').style.pointerEvents = 'none';
@@ -55,7 +57,9 @@ mapBase.getPane('boundaryPane').style.pointerEvents = 'none';
 const mapOverlay = L.map('map-overlay', {
     zoomControl: false,
     attributionControl: true,
-    dragging: false // Custom dragging for rotation
+    dragging: false, // Custom dragging for rotation
+    zoomSnap: 0.1,
+    zoomDelta: 0.5
 }).setView(mapConfig.center, mapConfig.zoom);
 
 mapOverlay.createPane('boundaryPane').style.zIndex = '650';

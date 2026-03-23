@@ -4,14 +4,11 @@ export function setupSync(mapBase, mapOverlay, state) {
     let isSyncing = false;
     
     function sync(sourceMap, targetMap) {
-        if (!state.syncCheckbox.checked) return;
-        if (isSyncing) return; // Prevent loop
+        if (!state.syncCheckbox.checked || isSyncing) return;
         
         isSyncing = true;
-        const z = sourceMap.getZoom();
-        if (targetMap.getZoom() !== z) {
-            targetMap.setZoom(z, { animate: false });
-        }
+        // With zoomSnap: 0.1, getZoom() returns precise fractional values
+        targetMap.setZoom(sourceMap.getZoom(), { animate: false });
         isSyncing = false;
     }
 
