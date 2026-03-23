@@ -56,37 +56,75 @@ export function setRotation(degrees, state) {
     debouncedUpdateURL(state);
 }
 
-export function setupCustomDrag(mapOverlay, state) {
+export function setupCustomDrag(mapBase, mapOverlay, state) {
     const overlayDiv = document.getElementById('map-overlay');
+    // For the base map, we access the Leaflet container
+    const baseDiv = mapBase.getContainer();
+    
     let isDragging = false;
+    let dragMapInstance = null;
     let lastX = 0;
     let lastY = 0;
 
-    overlayDiv.addEventListener('mousedown', (e) => {
-        if (overlayDiv.classList.contains('interaction-disabled')) return;
+    const startDrag = (e, targetMap) => {
         isDragging = true;
+        dragMapInstance = targetMap;
         lastX = e.clientX;
         lastY = e.clientY;
-        overlayDiv.style.cursor = 'grabbing';
+        document.body.style.cursor = 'grabbing';
+        
+        // Temporarily disable built-in dragging
+        mapBase.dragging.disable();
+    };
+
+    const stopDrag = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        dragMapInstance = null;
+        document.body.style.cursor = '';
+        
+        // Re-enable Base Map dragging if in correct mode
+        if (state.mode === 'base') {
+            mapBase.dragging.enable();
+        }
+    };
+
+    // Overlay MouseDown
+    overlayDiv.addEventListener('mousedown', (e) => {
+        if (state.mode === 'overlay') {
+            // Normal -> Overlay, Ctrl -> Base
+            startDrag(e, e.ctrlKey ? mapBase : mapOverlay);
+            e.stopPropagation();
+        }
     });
 
-    window.addEventListener('mouseup', () => {
-        isDragging = false;
-        overlayDiv.style.cursor = '';
+    // Base MouseDown (intercepting Ctrl+Drag)
+    baseDiv.addEventListener('mousedown', (e) => {
+        if (state.mode === 'base' && e.ctrlKey) {
+            // Normal (captured by Leaflet) -> Base, Ctrl -> Overlay
+            startDrag(e, mapOverlay);
+            e.stopPropagation();
+        }
     });
+
+    window.addEventListener('mouseup', stopDrag);
 
     window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
+        if (!isDragging || !dragMapInstance) return;
 
         const dx = e.clientX - lastX;
         const dy = e.clientY - lastY;
         
-        const rad = state.currentRotation * (Math.PI / 180);
-
-        const mapDx = dx * Math.cos(-rad) - dy * Math.sin(-rad);
-        const mapDy = dx * Math.sin(-rad) + dy * Math.cos(-rad);
-
-        mapOverlay.panBy([-mapDx, -mapDy], { animate: false });
+        if (dragMapInstance === mapOverlay) {
+            // Handle rotation for overlay pan
+            const rad = state.currentRotation * (Math.PI / 180);
+            const mapDx = dx * Math.cos(-rad) - dy * Math.sin(-rad);
+            const mapDy = dx * Math.sin(-rad) + dy * Math.cos(-rad);
+            mapOverlay.panBy([-mapDx, -mapDy], { animate: false });
+        } else {
+            // Standard pan for base
+            mapBase.panBy([-dx, -dy], { animate: false });
+        }
 
         lastX = e.clientX;
         lastY = e.clientY;

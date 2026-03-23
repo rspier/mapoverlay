@@ -6,6 +6,7 @@ export function toggleSidebar(uiPanel, iconCollapse) {
 export function setControlMode(mode, state) {
     const divOverlay = document.getElementById('map-overlay');
     const { btnBase, btnOverlay } = state;
+    state.mode = mode;
     
     if (mode === 'base') {
         divOverlay.classList.add('interaction-disabled');
@@ -18,4 +19,14 @@ export function setControlMode(mode, state) {
         btnOverlay.className = "flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors bg-blue-500 text-white shadow-sm";
         btnBase.className = "flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors text-gray-600 hover:bg-gray-50";
     }
+}
+
+export function swapLayers(state, tileProviders, mapBase, mapOverlay, mapFuncs) {
+    const tempIndex = state.selBase.value;
+    state.selBase.value = state.selOverlay.value;
+    state.selOverlay.value = tempIndex;
+
+    // Refresh layers
+    mapFuncs.setLayer(mapBase, tileProviders[state.selBase.value], false, state);
+    mapFuncs.setLayer(mapOverlay, tileProviders[state.selOverlay.value], true, state);
 }

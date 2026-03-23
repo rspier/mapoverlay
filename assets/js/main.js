@@ -1,6 +1,4 @@
 /*
- * Copyright 2026 rspier
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,7 +23,7 @@ const state = {
     layerOverlay: null,
     currentRotation: 0,
     latestQueryString: "",
-    
+
     // Selectors & UI Elements
     selBase: document.getElementById('select-base'),
     selOverlay: document.getElementById('select-overlay'),
@@ -43,8 +41,8 @@ const state = {
 
 // Initialize Maps
 const mapBase = L.map('map-base', {
-    zoomControl: false, 
-    attributionControl: false 
+    zoomControl: false,
+    attributionControl: false
 }).setView(mapConfig.center, mapConfig.zoom);
 
 const mapOverlay = L.map('map-overlay', {
@@ -70,15 +68,15 @@ function initApp() {
     const hasParams = params.has('b');
 
     // Defaults or Params
-    state.selBase.value = params.get('b') || 7; 
-    state.selOverlay.value = params.get('o') || 0; 
-    
-    const op = params.get('op') || 0.7; 
+    state.selBase.value = params.get('b') || 7;
+    state.selOverlay.value = params.get('o') || 0;
+
+    const op = params.get('op') || 0.7;
     state.rangeOpacity.value = op;
     state.valOpacity.innerText = Math.round(op * 100) + '%';
-    
+
     state.filterSelect.value = params.get('tint') || 'filter-normal';
-    
+
     const rot = params.get('rot') || 0;
     state.rangeRot.value = rot;
     mapFuncs.setRotation(rot, state);
@@ -100,9 +98,9 @@ function initApp() {
     // Init Logic
     mapFuncs.setLayer(mapBase, tileProviders[state.selBase.value], false, state);
     mapFuncs.setLayer(mapOverlay, tileProviders[state.selOverlay.value], true, state);
-    
+
     mapFuncs.setupSync(mapBase, mapOverlay, state);
-    mapFuncs.setupCustomDrag(mapOverlay, state);
+    mapFuncs.setupCustomDrag(mapBase, mapOverlay, state);
     ui.setControlMode('overlay', state);
 }
 
@@ -129,6 +127,7 @@ mapOverlay.on('moveend zoomend', () => utils.debouncedUpdateURL(state));
 
 // Button Handlers
 document.getElementById('btn-share').onclick = () => utils.copyShareLink(state);
+document.getElementById('btn-swap').onclick = () => ui.swapLayers(state, tileProviders, mapBase, mapOverlay, mapFuncs);
 document.getElementById('btn-collapse').onclick = () => ui.toggleSidebar(state.uiPanel, state.iconCollapse);
 document.getElementById('ctrl-base').onclick = () => ui.setControlMode('base', state);
 document.getElementById('ctrl-overlay').onclick = () => ui.setControlMode('overlay', state);
@@ -139,7 +138,7 @@ document.getElementById('btn-search-base').onclick = () => {
     ui.setControlMode('base', state);
 };
 document.getElementById('search-base').onkeypress = (e) => {
-    if(e.key === 'Enter') {
+    if (e.key === 'Enter') {
         utils.searchLocation(e.target.value, mapBase, state);
         ui.setControlMode('base', state);
     }
@@ -149,7 +148,7 @@ document.getElementById('btn-search-overlay').onclick = () => {
     ui.setControlMode('overlay', state);
 };
 document.getElementById('search-overlay').onkeypress = (e) => {
-    if(e.key === 'Enter') {
+    if (e.key === 'Enter') {
         utils.searchLocation(e.target.value, mapOverlay, state);
         ui.setControlMode('overlay', state);
     }

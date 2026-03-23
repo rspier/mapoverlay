@@ -57,6 +57,13 @@
                     </svg>
                 </button>
                 
+                <!-- Swap Button -->
+                <button id="btn-swap" class="text-xs flex items-center gap-1 text-gray-600 hover:text-gray-800 font-medium bg-gray-50 hover:bg-gray-100 px-2 py-1 rounded transition-colors" title="Swap Layers">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                    </svg>
+                </button>
+
                 <!-- Collapse Button -->
                 <button id="btn-collapse" class="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors">
                     <svg id="icon-collapse" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,7 +168,8 @@
         </div>
 
         <div class="mt-4 pt-3 border-t border-gray-100 text-[10px] text-gray-400 text-center">
-            Note: Drag maps independently to align features.
+            Note: Drag maps independently to align features. <br/>
+            <span class="text-blue-400 font-medium">Tip: Hold Ctrl to drag the non-selected map.</span>
         </div>
     </div>
 
