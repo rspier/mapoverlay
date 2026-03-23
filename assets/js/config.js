@@ -10,22 +10,30 @@ export const tileProviders = [
         attribution: 'Tiles &copy; Esri &mdash; National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC'
     },
     {
-        name: "Neighborhoods & Labels (CartoDB)",
+        name: "Labels: Streets + Places (CartoDB)",
         url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
         attribution: '&copy; CARTO'
     },
     {
-        name: "Neighborhoods Dark (CartoDB)",
+        name: "Labels: Streets + Places Dark (CartoDB)",
         url: 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
         attribution: '&copy; CARTO'
     },
     {
-        name: "Roads & Labels Only (Esri)",
+        name: "Labels: Combined (Esri Hybrid)",
+        url: [
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'
+        ],
+        attribution: 'Tiles &copy; Esri'
+    },
+    {
+        name: "Labels: Roads Only (Esri)",
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
         attribution: 'Tiles &copy; Esri'
     },
     {
-        name: "Boundaries & Places (Esri)",
+        name: "Labels: Places Only (Esri)",
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
         attribution: 'Tiles &copy; Esri'
     },

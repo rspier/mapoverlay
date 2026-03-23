@@ -23,16 +23,27 @@ export function setLayer(mapInstance, provider, isOverlay, state) {
     if (isOverlay && state.layerOverlay) mapInstance.removeLayer(state.layerOverlay);
     if (!isOverlay && state.layerBase) mapInstance.removeLayer(state.layerBase);
 
-    const newLayer = L.tileLayer(provider.url, {
-        attribution: provider.attribution,
-        opacity: isOverlay ? parseFloat(state.rangeOpacity.value) : 1
-    }).addTo(mapInstance);
+    // If source is a single URL, wrap it in an array for consistent handling
+    const urls = Array.isArray(provider.url) ? provider.url : [provider.url];
+    
+    // We create a LayerGroup to hold multiple tile layers if needed
+    const layerGroup = L.layerGroup();
+    
+    urls.forEach(url => {
+        L.tileLayer(url, {
+            attribution: provider.attribution,
+            opacity: isOverlay ? parseFloat(state.rangeOpacity.value) : 1
+        }).addTo(layerGroup);
+    });
+
+    layerGroup.addTo(mapInstance);
 
     if (isOverlay) {
-        state.layerOverlay = newLayer;
+        state.layerOverlay = layerGroup;
+        // Small delay to ensure container is ready for filter class
         setTimeout(() => applyOverlayFilter(state), 10); 
     } else {
-        state.layerBase = newLayer;
+        state.layerBase = layerGroup;
     }
     debouncedUpdateURL(state);
 }
@@ -40,11 +51,15 @@ export function setLayer(mapInstance, provider, isOverlay, state) {
 export function applyOverlayFilter(state) {
     if (!state.layerOverlay) return;
     const filterClass = state.filterSelect.value;
-    const container = state.layerOverlay.getContainer();
-    if (container) {
-        container.classList.remove('filter-normal', 'filter-invert', 'filter-red', 'filter-blue', 'filter-green', 'filter-high-contrast');
-        container.classList.add(filterClass);
-    }
+    
+    // For a LayerGroup, we need to apply filters to each tile layer's container
+    state.layerOverlay.eachLayer(layer => {
+        const container = layer.getContainer();
+        if (container) {
+            container.classList.remove('filter-normal', 'filter-invert', 'filter-red', 'filter-blue', 'filter-green', 'filter-high-contrast');
+            container.classList.add(filterClass);
+        }
+    });
     debouncedUpdateURL(state);
 }
 

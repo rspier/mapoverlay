@@ -127,7 +127,9 @@ state.selOverlay.onchange = () => mapFuncs.setLayer(mapOverlay, tileProviders[st
 state.rangeOpacity.oninput = (e) => {
     const val = e.target.value;
     state.valOpacity.innerText = Math.round(val * 100) + '%';
-    if (state.layerOverlay) state.layerOverlay.setOpacity(val);
+    if (state.layerOverlay) {
+        state.layerOverlay.eachLayer(layer => layer.setOpacity(val));
+    }
     utils.debouncedUpdateURL(state);
 };
 
