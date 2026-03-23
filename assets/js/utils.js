@@ -76,9 +76,12 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
             const [lon, lat] = feature.geometry.coordinates;
             const coord = [lat, lon];
             
-            // Clear old markers/boundaries
-            if (state.searchMarkerBase) state.mapBase.removeLayer(state.searchMarkerBase);
-            if (state.searchMarkerOverlay) state.mapOverlay.removeLayer(state.searchMarkerOverlay);
+            // Clear old marker/boundary for the specific side only
+            if (isBaseMap) {
+                if (state.searchMarkerBase) state.mapBase.removeLayer(state.searchMarkerBase);
+            } else {
+                if (state.searchMarkerOverlay) state.mapOverlay.removeLayer(state.searchMarkerOverlay);
+            }
 
             // Fetch Boundary (GeoJSON) from Nominatim
             let { osm_id, osm_type } = feature.properties;
@@ -106,7 +109,6 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
                     const revResp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`);
                     const revData = await revResp.json();
                     if (revData && revData.osm_id && revData.osm_type) {
-                        // Nominatim returns osm_type as lowercase or full string, we need first char uppercase
                         const typePrefix = revData.osm_type.charAt(0).toUpperCase();
                         boundaryGeoJSON = await tryFetchBoundary(revData.osm_id, typePrefix);
                     }
@@ -121,12 +123,13 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
                 fillColor: 'transparent', 
                 fillOpacity: 0
             };
-            const styleBase = { ...common, color: '#ef4444' }; // Red for bottom
-            const styleOverlay = { ...common, color: '#3b82f6' }; // Blue for top
 
             if (boundaryGeoJSON && (boundaryGeoJSON.type === 'Polygon' || boundaryGeoJSON.type === 'MultiPolygon')) {
-                state.searchMarkerBase = L.geoJSON(boundaryGeoJSON, { style: styleBase }).addTo(state.mapBase);
-                state.searchMarkerOverlay = L.geoJSON(boundaryGeoJSON, { style: styleOverlay }).addTo(state.mapOverlay);
+                if (isBaseMap) {
+                    state.searchMarkerBase = L.geoJSON(boundaryGeoJSON, { style: { ...common, color: '#ef4444' } }).addTo(state.mapBase);
+                } else {
+                    state.searchMarkerOverlay = L.geoJSON(boundaryGeoJSON, { style: { ...common, color: '#3b82f6' } }).addTo(state.mapOverlay);
+                }
             }
 
             if (wasSynced) {
