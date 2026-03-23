@@ -137,11 +137,51 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
                 fillOpacity: 0
             };
 
+            const locName = feature.properties.name || query;
+
+            // --- Label Scaling Logic ---
+            let labelClasses = "text-xs px-2 py-0.5 border text-center";
+            if (feature.properties.extent) {
+                const [w, s, e, n] = feature.properties.extent;
+                const diag = Math.sqrt(Math.pow(e - w, 2) + Math.pow(n - s, 2));
+                
+                // Broad categories for visual hierarchy
+                if (diag > 5) labelClasses = "text-5xl px-12 py-6 border-[6px] rounded-[3rem]"; // National / Large State
+                else if (diag > 1) labelClasses = "text-3xl px-8 py-4 border-4 rounded-[2rem]"; // Region / Large City
+                else if (diag > 0.1) labelClasses = "text-xl px-4 py-2 border-2 rounded-2xl"; // District
+                else if (diag > 0.02) labelClasses = "text-sm px-3 py-1 border-2 rounded-xl"; // Neighborhood
+            }
+
             if (boundaryGeoJSON && (boundaryGeoJSON.type === 'Polygon' || boundaryGeoJSON.type === 'MultiPolygon')) {
                 if (isBaseMap) {
                     state.searchMarkerBase = L.geoJSON(boundaryGeoJSON, { style: { ...common, color: '#a855f7' } }).addTo(state.mapBase);
+                    
+                    // Add Label
+                    if (state.searchLabelBase) state.mapBase.removeLayer(state.searchLabelBase);
+                    state.searchLabelBase = L.marker(coord, {
+                        icon: L.divIcon({
+                            className: 'custom-map-label',
+                            html: `<div class="bg-white/90 backdrop-blur-sm ${labelClasses} border-purple-300 text-purple-700 font-bold whitespace-nowrap shadow-xl">${locName}</div>`,
+                            iconSize: [0, 0],
+                            iconAnchor: [0, 0]
+                        }),
+                        pane: 'boundaryPane'
+                    }).addTo(state.mapBase);
+
                 } else {
                     state.searchMarkerOverlay = L.geoJSON(boundaryGeoJSON, { style: { ...common, color: '#3b82f6' } }).addTo(state.mapOverlay);
+                    
+                    // Add Label
+                    if (state.searchLabelOverlay) state.mapOverlay.removeLayer(state.searchLabelOverlay);
+                    state.searchLabelOverlay = L.marker(coord, {
+                        icon: L.divIcon({
+                            className: 'custom-map-label',
+                            html: `<div class="bg-white/90 backdrop-blur-sm ${labelClasses} border-blue-300 text-blue-700 font-bold whitespace-nowrap shadow-xl">${locName}</div>`,
+                            iconSize: [0, 0],
+                            iconAnchor: [0, 0]
+                        }),
+                        pane: 'boundaryPane'
+                    }).addTo(state.mapOverlay);
                 }
             }
 

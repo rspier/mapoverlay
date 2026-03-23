@@ -39,6 +39,8 @@ const state = {
     btnOverlay: document.getElementById('ctrl-overlay'),
     searchMarkerBase: null,
     searchMarkerOverlay: null,
+    searchLabelBase: null,
+    searchLabelOverlay: null,
     searchQueryBase: "",
     searchQueryOverlay: "",
 };
