@@ -37,6 +37,10 @@ const state = {
     iconCollapse: document.getElementById('icon-collapse'),
     btnBase: document.getElementById('ctrl-base'),
     btnOverlay: document.getElementById('ctrl-overlay'),
+    searchMarkerBase: null,
+    searchMarkerOverlay: null,
+    searchQueryBase: "",
+    searchQueryOverlay: "",
 };
 
 // Initialize Maps
@@ -102,6 +106,18 @@ function initApp() {
     mapFuncs.setupSync(mapBase, mapOverlay, state);
     mapFuncs.setupCustomDrag(mapBase, mapOverlay, state);
     ui.setControlMode('overlay', state);
+
+    // Initial Searches from URL
+    if (params.has('sb')) {
+        const query = params.get('sb');
+        document.getElementById('search-base').value = query;
+        utils.searchLocation(query, mapBase, state, true);
+    }
+    if (params.has('so')) {
+        const query = params.get('so');
+        document.getElementById('search-overlay').value = query;
+        utils.searchLocation(query, mapOverlay, state, false);
+    }
 }
 
 // Event Listeners
@@ -134,22 +150,22 @@ document.getElementById('ctrl-overlay').onclick = () => ui.setControlMode('overl
 
 // Search logic
 document.getElementById('btn-search-base').onclick = () => {
-    utils.searchLocation(document.getElementById('search-base').value, mapBase, state);
+    utils.searchLocation(document.getElementById('search-base').value, mapBase, state, true);
     ui.setControlMode('base', state);
 };
 document.getElementById('search-base').onkeypress = (e) => {
     if (e.key === 'Enter') {
-        utils.searchLocation(e.target.value, mapBase, state);
+        utils.searchLocation(e.target.value, mapBase, state, true);
         ui.setControlMode('base', state);
     }
 };
 document.getElementById('btn-search-overlay').onclick = () => {
-    utils.searchLocation(document.getElementById('search-overlay').value, mapOverlay, state);
+    utils.searchLocation(document.getElementById('search-overlay').value, mapOverlay, state, false);
     ui.setControlMode('overlay', state);
 };
 document.getElementById('search-overlay').onkeypress = (e) => {
     if (e.key === 'Enter') {
-        utils.searchLocation(e.target.value, mapOverlay, state);
+        utils.searchLocation(e.target.value, mapOverlay, state, false);
         ui.setControlMode('overlay', state);
     }
 };

@@ -20,10 +20,13 @@ export function updateURL(state) {
     params.set('rot', state.rangeRot.value);
     params.set('sync', state.syncCheckbox.checked ? '1' : '0');
 
+    // Search persistence
+    if (state.searchQueryBase) params.set('sb', state.searchQueryBase);
+    if (state.searchQueryOverlay) params.set('so', state.searchQueryOverlay);
+
     state.latestQueryString = params.toString();
 
     try {
-        // Try to update address bar (works in standard hosting)
         window.history.replaceState({}, '', `${window.location.pathname}?${state.latestQueryString}`);
     } catch (e) {
         // Fail silently in sandbox
@@ -49,9 +52,16 @@ export function copyShareLink(state) {
     });
 }
 
-export async function searchLocation(query, targetMap, state) {
+export async function searchLocation(query, targetMap, state, isBaseMap = false) {
     if (!query) return;
     
+    // Persist search query in state
+    if (isBaseMap) {
+        state.searchQueryBase = query;
+    } else {
+        state.searchQueryOverlay = query;
+    }
+
     const wasSynced = state.syncCheckbox.checked;
     if (wasSynced) {
         state.syncCheckbox.checked = false; 
@@ -62,8 +72,45 @@ export async function searchLocation(query, targetMap, state) {
         if (!resp.ok) throw new Error('Network response was not ok');
         const data = await resp.json();
         if (data && data.features && data.features.length > 0) {
-            const [lon, lat] = data.features[0].geometry.coordinates;
+            const feature = data.features[0];
+            const [lon, lat] = feature.geometry.coordinates;
+            const coord = [lat, lon];
             
+            // Clear old markers/boundaries
+            if (state.searchMarkerBase) state.mapBase.removeLayer(state.searchMarkerBase);
+            if (state.searchMarkerOverlay) state.mapOverlay.removeLayer(state.searchMarkerOverlay);
+
+            // Fetch Boundary (GeoJSON) from Nominatim
+            const { osm_id, osm_type } = feature.properties;
+            let boundaryGeoJSON = null;
+            if (osm_id && osm_type) {
+                try {
+                    const lookupResp = await fetch(`https://nominatim.openstreetmap.org/lookup?osm_ids=${osm_type}${osm_id}&format=json&polygon_geojson=1`);
+                    const lookupData = await lookupResp.json();
+                    if (lookupData && lookupData[0] && lookupData[0].geojson) {
+                        boundaryGeoJSON = lookupData[0].geojson;
+                    }
+                } catch (err) {
+                    console.warn("Could not fetch boundary geometry", err);
+                }
+            }
+
+            // Styles for each layer
+            const common = {
+                weight: 3, 
+                opacity: 0.8, 
+                fillColor: 'transparent', 
+                fillOpacity: 0,
+                className: 'pulse-marker' 
+            };
+            const styleBase = { ...common, color: '#ef4444' }; // Red for bottom
+            const styleOverlay = { ...common, color: '#3b82f6' }; // Blue for top
+
+            if (boundaryGeoJSON && (boundaryGeoJSON.type === 'Polygon' || boundaryGeoJSON.type === 'MultiPolygon')) {
+                state.searchMarkerBase = L.geoJSON(boundaryGeoJSON, { style: styleBase }).addTo(state.mapBase);
+                state.searchMarkerOverlay = L.geoJSON(boundaryGeoJSON, { style: styleOverlay }).addTo(state.mapOverlay);
+            }
+
             if (wasSynced) {
                 targetMap.once('moveend', () => {
                     state.syncCheckbox.checked = true; 
@@ -71,13 +118,12 @@ export async function searchLocation(query, targetMap, state) {
                 });
             }
 
-            targetMap.flyTo([lat, lon], targetMap.getZoom());
+            targetMap.flyTo(coord, targetMap.getZoom());
         } else {
             alert("Location not found");
         }
     } catch (e) {
         console.error("Search failed:", e);
-        alert("Search failed. Service might be unavailable.");
         if (wasSynced) state.syncCheckbox.checked = true;
     }
     

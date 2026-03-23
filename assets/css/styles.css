@@ -86,3 +86,14 @@ input[type=range]::-webkit-slider-runnable-track {
 .filter-blue { filter: sepia(1) saturate(5) hue-rotate(180deg); }
 .filter-green { filter: sepia(1) saturate(5) hue-rotate(80deg); }
 .filter-high-contrast { filter: contrast(200%); }
+
+/* Pulsing search marker */
+.pulse-marker {
+    animation: marker-pulse 1.5s infinite;
+}
+
+@keyframes marker-pulse {
+    0% { stroke-width: 3; stroke-opacity: 0.8; }
+    50% { stroke-width: 6; stroke-opacity: 0.4; }
+    100% { stroke-width: 3; stroke-opacity: 0.8; }
+}
