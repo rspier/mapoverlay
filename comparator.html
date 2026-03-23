@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Layer Comparator</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+        }
+        
+        /* Map Container Stacking */
+        .map-container {
+            position: absolute;
+            transition: transform 0.1s ease-out; /* Smooth rotation */
+        }
+
+        #map-base {
+            z-index: 1;
+            background: #ffffff;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #map-overlay {
+            z-index: 2;
+            background: transparent;
+            /* Clipping Fix: Make container massive and center it */
+            width: 150vmax; 
+            height: 150vmax;
+            top: 50%;
+            left: 50%;
+            /* transform will be set by JS to handle centering + rotation */
+            pointer-events: none; /* Default state, toggled by JS */
+        }
+
+        /* Interaction Passthrough Classes */
+        .interaction-disabled {
+            pointer-events: none !important;
+        }
+        .interaction-enabled {
+            pointer-events: auto !important;
+        }
+
+        .control-panel {
+            z-index: 1000;
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .control-panel.collapsed {
+            max-height: 60px !important; /* Only show header */
+            overflow: hidden;
+        }
+
+        /* Custom UI tweaks */
+        input[type=range] {
+            -webkit-appearance: none; 
+            width: 100%; 
+            background: transparent; 
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -6px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e5e7eb;
+            border-radius: 2px;
+        }
+        
+        #map-overlay .leaflet-control-zoom {
+            display: none;
+        }
+
+        /* --- CSS Filters for Layer Tinting --- */
+        .filter-normal { filter: none; }
+        .filter-invert { filter: invert(1) hue-rotate(180deg); }
+        .filter-red { filter: sepia(1) saturate(5) hue-rotate(-50deg); }
+        .filter-blue { filter: sepia(1) saturate(5) hue-rotate(180deg); }
+        .filter-green { filter: sepia(1) saturate(5) hue-rotate(80deg); }
+        .filter-high-contrast { filter: contrast(200%); }
+
+    </style>
+</head>
+<body>
+
+    <!-- Two Maps -->
+    <div id="map-base" class="map-container"></div>
+    <div id="map-overlay" class="map-container interaction-disabled"></div>
+
+    <!-- Floating UI Panel -->
+    <div id="ui-panel" class="control-panel absolute top-4 left-4 w-96 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 p-4 max-h-[90vh] overflow-y-auto">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+            <h1 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 4" />
+                </svg>
+                Map Comparator
+            </h1>
+            
+            <div class="flex items-center gap-2">
+                <!-- Share Button -->
+                <button id="btn-share" onclick="copyShareLink()" class="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors" title="Copy Link">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                </button>
+                
+                <!-- Collapse Button -->
+                <button id="btn-collapse" onclick="toggleSidebar()" class="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors">
+                    <svg id="icon-collapse" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Global Controls -->
+        <div class="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-blue-800 uppercase">Interaction Mode</span>
+                <span class="text-[10px] text-blue-600">Which map moves?</span>
+            </div>
+            <div class="flex bg-white rounded-lg p-1 shadow-sm border border-blue-100">
+                <button id="ctrl-base" class="flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors text-gray-600 hover:bg-gray-50" onclick="setControlMode('base')">Move Base</button>
+                <button id="ctrl-overlay" class="flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors bg-blue-500 text-white shadow-sm" onclick="setControlMode('overlay')">Move Overlay</button>
+            </div>
+            
+            <div class="mt-3 flex items-center gap-2">
+                <input type="checkbox" id="sync-zoom" checked class="rounded text-blue-500 focus:ring-blue-500 w-4 h-4">
+                <label for="sync-zoom" class="text-xs text-gray-700 font-medium select-none cursor-pointer">Lock/Sync Zoom Levels</label>
+            </div>
+        </div>
+
+        <!-- Section: Overlay Map (Top) -->
+        <div class="mb-5 relative group">
+            <div class="absolute -left-4 top-4 bottom-4 w-1 bg-blue-500 rounded-r"></div>
+            <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 pl-2">Top Layer (Overlay)</h2>
+            
+            <!-- Search Overlay -->
+            <div class="flex gap-2 mb-2">
+                <div class="relative flex-1">
+                    <input type="text" id="search-overlay" placeholder="Loc: New York" 
+                        class="w-full px-3 py-1.5 pr-8 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                    <button id="btn-search-overlay" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 p-1">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Style, Opacity, Rotation, Tint -->
+            <div class="space-y-3">
+                <select id="select-overlay" class="w-full p-2 bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded focus:ring-blue-500 block"></select>
+                
+                <!-- Tint Control -->
+                <div class="flex items-center gap-2">
+                     <label class="text-[10px] font-bold text-gray-500 uppercase whitespace-nowrap min-w-[30px]">Tint:</label>
+                     <select id="filter-overlay" class="w-full p-1.5 bg-gray-50 border border-gray-300 text-gray-900 text-[10px] rounded focus:ring-blue-500 block">
+                         <option value="filter-normal">Normal (Default)</option>
+                         <option value="filter-invert">White (Invert)</option>
+                         <option value="filter-red">Red</option>
+                         <option value="filter-blue">Blue</option>
+                         <option value="filter-green">Green</option>
+                         <option value="filter-high-contrast">High Contrast</option>
+                     </select>
+                </div>
+
+                <!-- Opacity -->
+                <div class="bg-gray-50 p-2 rounded border border-gray-200">
+                    <div class="flex justify-between mb-1">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Opacity</label>
+                        <span id="opacity-val" class="text-[10px] font-mono text-blue-600">50%</span>
+                    </div>
+                    <input type="range" id="opacity-slider" min="0" max="1" step="0.01" value="0.5">
+                </div>
+
+                <!-- Rotation -->
+                <div class="bg-gray-50 p-2 rounded border border-gray-200">
+                    <div class="flex justify-between mb-1">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Rotation</label>
+                        <span id="rot-val" class="text-[10px] font-mono text-blue-600">0°</span>
+                    </div>
+                    <input type="range" id="rot-slider" min="-180" max="180" step="1" value="0">
+                    <div class="flex justify-between text-[8px] text-gray-400 mt-1">
+                        <span>-180°</span>
+                        <span>0°</span>
+                        <span>180°</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Base Map (Bottom) -->
+        <div class="relative group">
+            <div class="absolute -left-4 top-4 bottom-4 w-1 bg-gray-400 rounded-r"></div>
+            <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 pl-2">Bottom Layer (Base)</h2>
+            
+            <!-- Search Base -->
+            <div class="flex gap-2 mb-2">
+                <div class="relative flex-1">
+                    <input type="text" id="search-base" placeholder="Loc: Paris" 
+                        class="w-full px-3 py-1.5 pr-8 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-gray-500 focus:outline-none">
+                    <button id="btn-search-base" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <select id="select-base" class="w-full p-2 bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded focus:ring-gray-500 block"></select>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-gray-100 text-[10px] text-gray-400 text-center">
+            Note: Drag maps independently to align features.
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // --- Configuration ---
+        const mapConfig = {
+            center: [51.505, -0.09], // Default London
+            zoom: 13
+        };
+
+        const tileProviders = [
+            {
+                name: "National Geographic (Esri)",
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
+                attribution: 'Tiles &copy; Esri &mdash; National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC'
+            },
+            {
+                name: "Neighborhoods & Labels (CartoDB)",
+                url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+                attribution: '&copy; CARTO'
+            },
+            {
+                name: "Neighborhoods Dark (CartoDB)",
+                url: 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
+                attribution: '&copy; CARTO'
+            },
+            {
+                name: "Roads & Labels Only (Esri)",
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+                attribution: 'Tiles &copy; Esri'
+            },
+            {
+                name: "Boundaries & Places (Esri)",
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+                attribution: 'Tiles &copy; Esri'
+            },
+            {
+                name: "Navigation / Major Routes (CartoDB)",
+                url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                attribution: '&copy; CARTO'
+            },
+            {
+                name: "Clean / No Labels (CartoDB)",
+                url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+                attribution: '&copy; OpenStreetMap &copy; CARTO'
+            },
+            {
+                name: "Standard Streets (OSM)",
+                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                attribution: '&copy; OpenStreetMap contributors'
+            },
+            {
+                name: "Satellite (Esri)",
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                attribution: 'Tiles &copy; Esri'
+            },
+            {
+                name: "Dark Mode (CartoDB)",
+                url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                attribution: '&copy; CARTO'
+            },
+            {
+                name: "Topographic (OpenTopoMap)",
+                url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+                attribution: 'Map data: &copy; OpenStreetMap contributors'
+            }
+        ];
+
+        // --- Initialize Maps ---
+        
+        // Base Map (Bottom)
+        const mapBase = L.map('map-base', {
+            zoomControl: false, 
+            attributionControl: false 
+        }).setView(mapConfig.center, mapConfig.zoom);
+
+        // Overlay Map (Top)
+        const mapOverlay = L.map('map-overlay', {
+            zoomControl: false,
+            attributionControl: true,
+            dragging: false // Disable default dragging because we handle it manually for rotation support
+        }).setView(mapConfig.center, mapConfig.zoom);
+
+        L.control.zoom({ position: 'topright' }).addTo(mapBase);
+
+        // Layers Storage
+        let layerBase = null;
+        let layerOverlay = null;
+        let currentRotation = 0;
+
+        // Selectors
+        const selBase = document.getElementById('select-base');
+        const selOverlay = document.getElementById('select-overlay');
+        const syncCheckbox = document.getElementById('sync-zoom');
+        const rangeOpacity = document.getElementById('opacity-slider');
+        const valOpacity = document.getElementById('opacity-val');
+        const filterSelect = document.getElementById('filter-overlay');
+        const rangeRot = document.getElementById('rot-slider');
+        const valRot = document.getElementById('rot-val');
+        const uiPanel = document.getElementById('ui-panel');
+        const iconCollapse = document.getElementById('icon-collapse');
+
+        // --- Logic: Sidebar ---
+        function toggleSidebar() {
+            const isCollapsed = uiPanel.classList.toggle('collapsed');
+            // Rotate icon 180 degrees if collapsed
+            iconCollapse.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        // --- Logic: Zoom Sync ---
+        let isSyncing = false;
+        
+        function syncMaps(sourceMap, targetMap) {
+            if (!syncCheckbox.checked) return;
+            if (isSyncing) return; // Prevent loop
+            
+            isSyncing = true;
+            const z = sourceMap.getZoom();
+            if (targetMap.getZoom() !== z) {
+                targetMap.setZoom(z, { animate: false });
+            }
+            isSyncing = false;
+        }
+
+        mapBase.on('zoom', () => syncMaps(mapBase, mapOverlay));
+        mapOverlay.on('zoom', () => syncMaps(mapOverlay, mapBase));
+
+        // --- Logic: Tile Layers & Filters ---
+
+        function applyOverlayFilter() {
+            if (!layerOverlay) return;
+            const filterClass = filterSelect.value;
+            const container = layerOverlay.getContainer();
+            if (container) {
+                container.classList.remove('filter-normal', 'filter-invert', 'filter-red', 'filter-blue', 'filter-green', 'filter-high-contrast');
+                container.classList.add(filterClass);
+            }
+            debouncedUpdateURL();
+        }
+
+        function setLayer(mapInstance, providerIndex, isOverlay) {
+            const provider = tileProviders[providerIndex];
+            
+            if (isOverlay && layerOverlay) mapInstance.removeLayer(layerOverlay);
+            if (!isOverlay && layerBase) mapInstance.removeLayer(layerBase);
+
+            const newLayer = L.tileLayer(provider.url, {
+                attribution: provider.attribution,
+                opacity: isOverlay ? parseFloat(rangeOpacity.value) : 1
+            }).addTo(mapInstance);
+
+            if (isOverlay) {
+                layerOverlay = newLayer;
+                setTimeout(applyOverlayFilter, 10); 
+            } else {
+                layerBase = newLayer;
+            }
+            debouncedUpdateURL();
+        }
+
+        // --- Logic: Rotation & Panning ---
+        function setRotation(degrees) {
+            currentRotation = parseFloat(degrees);
+            const overlayContainer = document.getElementById('map-overlay');
+            // Combine centering translate with user rotation
+            overlayContainer.style.transform = `translate(-50%, -50%) rotate(${degrees}deg)`;
+            valRot.innerText = `${degrees}°`;
+            debouncedUpdateURL();
+        }
+
+        // Custom Drag Handler for Overlay
+        // Standard Leaflet panning confuses 'Up' with 'Map North'. 
+        // When the container is rotated, dragging 'Up' on screen means dragging 'Left' or 'Down' on the map.
+        // We must calculate the vector math to compensate.
+        const overlayDiv = document.getElementById('map-overlay');
+        let isDragging = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        overlayDiv.addEventListener('mousedown', (e) => {
+            if (overlayDiv.classList.contains('interaction-disabled')) return;
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            overlayDiv.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            overlayDiv.style.cursor = '';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            
+            // Convert degrees to radians
+            const rad = currentRotation * (Math.PI / 180);
+
+            // Rotate the drag vector by -rotation to align with map coordinate system
+            // NewX = x * cos(theta) + y * sin(theta)
+            // NewY = -x * sin(theta) + y * cos(theta)
+            // We invert the rotation (multiply by -1)
+            const mapDx = dx * Math.cos(-rad) - dy * Math.sin(-rad);
+            const mapDy = dx * Math.sin(-rad) + dy * Math.cos(-rad);
+
+            // Leaflet's panBy moves the MAP view. 
+            // If I drag mouse RIGHT (dx > 0), I want the map image to move RIGHT.
+            // This means the viewport center must move LEFT (negative).
+            mapOverlay.panBy([-mapDx, -mapDy], { animate: false });
+
+            lastX = e.clientX;
+            lastY = e.clientY;
+        });
+
+        // --- Interaction Mode ---
+        const btnBase = document.getElementById('ctrl-base');
+        const btnOverlay = document.getElementById('ctrl-overlay');
+        const divOverlay = document.getElementById('map-overlay');
+
+        function setControlMode(mode) {
+            if (mode === 'base') {
+                divOverlay.classList.add('interaction-disabled');
+                divOverlay.classList.remove('interaction-enabled');
+                btnBase.className = "flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors bg-blue-500 text-white shadow-sm";
+                btnOverlay.className = "flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors text-gray-600 hover:bg-gray-50";
+            } else {
+                divOverlay.classList.remove('interaction-disabled');
+                divOverlay.classList.add('interaction-enabled');
+                btnOverlay.className = "flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors bg-blue-500 text-white shadow-sm";
+                btnBase.className = "flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-colors text-gray-600 hover:bg-gray-50";
+            }
+        }
+
+        // --- URL State Management ---
+
+        function getMapLoc(map) {
+            const c = map.getCenter();
+            return [Number(c.lat.toFixed(4)), Number(c.lng.toFixed(4)), map.getZoom()].join(',');
+        }
+
+        let latestQueryString = "";
+
+        function updateURL() {
+            const params = new URLSearchParams();
+            
+            // Map States
+            params.set('b', selBase.value);
+            params.set('bloc', getMapLoc(mapBase));
+            params.set('o', selOverlay.value);
+            params.set('oloc', getMapLoc(mapOverlay));
+            
+            // UI States
+            params.set('op', rangeOpacity.value);
+            params.set('tint', filterSelect.value);
+            params.set('rot', rangeRot.value);
+            params.set('sync', syncCheckbox.checked ? '1' : '0');
+
+            latestQueryString = params.toString();
+
+            try {
+                // Try to update address bar (works in standard hosting)
+                window.history.replaceState({}, '', `${window.location.pathname}?${latestQueryString}`);
+            } catch (e) {
+                // Fail silently in sandbox
+            }
+        }
+
+        let timeoutId = null;
+        const debouncedUpdateURL = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(updateURL, 500);
+        };
+
+        function copyShareLink() {
+            updateURL(); 
+            const fullURL = `${window.location.origin}${window.location.pathname}?${latestQueryString}`;
+            
+            navigator.clipboard.writeText(fullURL).then(() => {
+                // Flash button text? no ID ref for text directly, let's just alert or console for now, or assume it works
+                // Just use the tooltip approach
+                const btn = document.getElementById('btn-share');
+                btn.classList.add('text-green-600');
+                setTimeout(() => btn.classList.remove('text-green-600'), 1000);
+            }).catch(err => {
+                console.error("Clipboard failed", err);
+                alert("Link: " + fullURL);
+            });
+        }
+
+        function initApp() {
+            // Populate Selects
+            tileProviders.forEach((p, i) => {
+                selBase.add(new Option(p.name, i));
+                selOverlay.add(new Option(p.name, i));
+            });
+
+            // Parse URL
+            const params = new URLSearchParams(window.location.search);
+            const hasParams = params.has('b');
+
+            // Apply Values or Defaults
+            selBase.value = params.get('b') || 7; // Default Base: OSM
+            selOverlay.value = params.get('o') || 0; // Default Overlay: National Geo
+            
+            const op = params.get('op') || 0.7; // Slightly clearer default for labels
+            rangeOpacity.value = op;
+            valOpacity.innerText = Math.round(op * 100) + '%';
+            
+            filterSelect.value = params.get('tint') || 'filter-normal';
+            
+            const rot = params.get('rot') || 0;
+            rangeRot.value = rot;
+            setRotation(rot);
+
+            if (params.has('sync')) {
+                syncCheckbox.checked = (params.get('sync') === '1');
+            }
+
+            // Set Initial View
+            if (hasParams && params.get('bloc')) {
+                const [lat, lng, z] = params.get('bloc').split(',').map(Number);
+                mapBase.setView([lat, lng], z, { animate: false });
+            }
+            if (hasParams && params.get('oloc')) {
+                const [lat, lng, z] = params.get('oloc').split(',').map(Number);
+                mapOverlay.setView([lat, lng], z, { animate: false });
+            }
+
+            // Init Layers
+            setLayer(mapBase, selBase.value, false);
+            setLayer(mapOverlay, selOverlay.value, true);
+            setControlMode('overlay');
+        }
+
+        // --- Event Listeners ---
+
+        selBase.onchange = () => setLayer(mapBase, selBase.value, false);
+        selOverlay.onchange = () => setLayer(mapOverlay, selOverlay.value, true);
+        
+        rangeOpacity.oninput = (e) => {
+            const val = e.target.value;
+            valOpacity.innerText = Math.round(val * 100) + '%';
+            if (layerOverlay) layerOverlay.setOpacity(val);
+            debouncedUpdateURL();
+        };
+
+        rangeRot.oninput = (e) => {
+            setRotation(e.target.value);
+        };
+
+        filterSelect.onchange = applyOverlayFilter;
+        syncCheckbox.onchange = debouncedUpdateURL;
+
+        mapBase.on('moveend zoomend', debouncedUpdateURL);
+        mapOverlay.on('moveend zoomend', debouncedUpdateURL);
+
+        // Search logic
+        async function searchLocation(query, targetMap) {
+            if (!query) return;
+            
+            // Logic: Store current state, disable sync during fly, re-enable after
+            const wasSynced = syncCheckbox.checked;
+            if (wasSynced) {
+                syncCheckbox.checked = false; // Turn off temporarily
+            }
+            
+            try {
+                const resp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}`);
+                if (!resp.ok) throw new Error('Network response was not ok');
+                const data = await resp.json();
+                if (data && data.features && data.features.length > 0) {
+                    const [lon, lat] = data.features[0].geometry.coordinates;
+                    
+                    // Use 'once' listener to restore sync after arrival
+                    if (wasSynced) {
+                        targetMap.once('moveend', () => {
+                            syncCheckbox.checked = true; // Restore lock
+                            debouncedUpdateURL();
+                        });
+                    }
+
+                    targetMap.flyTo([lat, lon], targetMap.getZoom());
+                } else {
+                    alert("Location not found");
+                }
+            } catch (e) {
+                console.error("Search failed:", e);
+                alert("Search failed. Service might be unavailable.");
+                // Restore sync if search failed
+                if (wasSynced) syncCheckbox.checked = true;
+            }
+            
+            debouncedUpdateURL();
+        }
+
+        document.getElementById('btn-search-base').onclick = () => {
+            searchLocation(document.getElementById('search-base').value, mapBase);
+            setControlMode('base');
+        };
+        document.getElementById('search-base').onkeypress = (e) => {
+            if(e.key === 'Enter') {
+                searchLocation(e.target.value, mapBase);
+                setControlMode('base');
+            }
+        };
+        document.getElementById('btn-search-overlay').onclick = () => {
+            searchLocation(document.getElementById('search-overlay').value, mapOverlay);
+            setControlMode('overlay');
+        };
+        document.getElementById('search-overlay').onkeypress = (e) => {
+            if(e.key === 'Enter') {
+                searchLocation(e.target.value, mapOverlay);
+                setControlMode('overlay');
+            }
+        };
+
+        // Start
+        initApp();
+
+    </script>
+</body>
+</html>
