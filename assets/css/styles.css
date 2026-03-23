@@ -1,15 +1,19 @@
-body {
-    font-family: 'Inter', sans-serif;
+html, body {
+    height: 100%;
+    width: 100%;
     margin: 0;
     padding: 0;
     overflow: hidden;
     background-color: #1a1a1a;
+    overscroll-behavior: none;
+    touch-action: none; /* Block all browser-level gestures */
 }
 
 /* Map Container Stacking */
 .map-container {
-    position: absolute;
+    position: fixed; /* Fixed is more stable for mobile viewports */
     transition: transform 0.1s ease-out; /* Smooth rotation */
+    touch-action: none;
 }
 
 #map-base {
@@ -59,13 +63,13 @@ input[type=range] {
 }
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    height: 16px;
-    width: 16px;
+    height: 24px;
+    width: 24px;
     border-radius: 50%;
     background: #3b82f6;
     cursor: pointer;
-    margin-top: -6px; 
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    margin-top: -10px; 
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 input[type=range]::-webkit-slider-runnable-track {
     width: 100%;
