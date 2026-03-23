@@ -81,27 +81,45 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
             if (state.searchMarkerOverlay) state.mapOverlay.removeLayer(state.searchMarkerOverlay);
 
             // Fetch Boundary (GeoJSON) from Nominatim
-            const { osm_id, osm_type } = feature.properties;
+            let { osm_id, osm_type } = feature.properties;
             let boundaryGeoJSON = null;
-            if (osm_id && osm_type) {
+            
+            async function tryFetchBoundary(oid, otype) {
+                if (!oid || !otype) return null;
                 try {
-                    const lookupResp = await fetch(`https://nominatim.openstreetmap.org/lookup?osm_ids=${osm_type}${osm_id}&format=json&polygon_geojson=1`);
+                    const lookupResp = await fetch(`https://nominatim.openstreetmap.org/lookup?osm_ids=${otype}${oid}&format=json&polygon_geojson=1`);
                     const lookupData = await lookupResp.json();
                     if (lookupData && lookupData[0] && lookupData[0].geojson) {
-                        boundaryGeoJSON = lookupData[0].geojson;
+                        const geo = lookupData[0].geojson;
+                        if (geo.type === 'Polygon' || geo.type === 'MultiPolygon') return geo;
                     }
-                } catch (err) {
-                    console.warn("Could not fetch boundary geometry", err);
-                }
+                } catch (err) { console.warn("Boundary lookup failed", err); }
+                return null;
+            }
+
+            // 1. Try direct match
+            boundaryGeoJSON = await tryFetchBoundary(osm_id, osm_type);
+
+            // 2. If no boundary for the specific point, try reverse lookup to find containing area
+            if (!boundaryGeoJSON) {
+                try {
+                    const revResp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`);
+                    const revData = await revResp.json();
+                    if (revData && revData.osm_id && revData.osm_type) {
+                        // Nominatim returns osm_type as lowercase or full string, we need first char uppercase
+                        const typePrefix = revData.osm_type.charAt(0).toUpperCase();
+                        boundaryGeoJSON = await tryFetchBoundary(revData.osm_id, typePrefix);
+                    }
+                } catch (err) { console.warn("Reverse boundary lookup failed", err); }
             }
 
             // Styles for each layer
             const common = {
-                weight: 3, 
-                opacity: 0.8, 
+                pane: 'boundaryPane',
+                weight: 5, 
+                opacity: 1, 
                 fillColor: 'transparent', 
-                fillOpacity: 0,
-                className: 'pulse-marker' 
+                fillOpacity: 0
             };
             const styleBase = { ...common, color: '#ef4444' }; // Red for bottom
             const styleOverlay = { ...common, color: '#3b82f6' }; // Blue for top
