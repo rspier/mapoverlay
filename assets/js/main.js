@@ -37,6 +37,7 @@ const state = {
     iconCollapse: document.getElementById('icon-collapse'),
     btnBase: document.getElementById('ctrl-base'),
     btnOverlay: document.getElementById('ctrl-overlay'),
+    btnHandle: document.getElementById('btn-handle'),
     searchMarkerBase: null,
     searchMarkerOverlay: null,
     searchLabelBase: null,
@@ -118,6 +119,7 @@ function initApp() {
     mapFuncs.setupSync(mapBase, mapOverlay, state);
     mapFuncs.setupCustomDrag(mapBase, mapOverlay, state);
     ui.setControlMode('overlay', state);
+    ui.setupDrawerSwipe(state.uiPanel, state.btnHandle, state.iconCollapse);
 
     // Initial Searches from URL
     if (params.has('sb')) {
