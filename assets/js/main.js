@@ -199,13 +199,24 @@ document.getElementById('btn-handle').onclick = () => ui.toggleSidebar(state.uiP
 document.getElementById('btn-clear-base').onclick = () => utils.clearSearch(mapBase, state, true);
 document.getElementById('btn-clear-overlay').onclick = () => utils.clearSearch(mapOverlay, state, false);
 
-// Toggle Clear buttons on typing
+// Toggle Clear buttons and fetch suggestions on typing
 ['search-base', 'search-overlay'].forEach(id => {
     const input = document.getElementById(id);
     const clearBtnId = id === 'search-base' ? 'btn-clear-base' : 'btn-clear-overlay';
+    const resultsDivId = id === 'search-base' ? 'results-base' : 'results-overlay';
+    const targetMap = id === 'search-base' ? mapBase : mapOverlay;
+    const isBase = id === 'search-base';
+
     input.addEventListener('input', () => {
         document.getElementById(clearBtnId).classList.toggle('hidden', input.value === '');
+        utils.fetchSuggestions(input.value, document.getElementById(resultsDivId), targetMap, state, isBase);
     });
+});
+
+// Close suggestions on outside click
+window.addEventListener('click', () => {
+    document.getElementById('results-base').classList.add('hidden');
+    document.getElementById('results-overlay').classList.add('hidden');
 });
 
 // Start

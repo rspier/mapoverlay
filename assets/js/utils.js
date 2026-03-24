@@ -75,7 +75,7 @@ export async function copyShareLink(state) {
     }
 }
 
-export async function searchLocation(query, targetMap, state, isBaseMap = false) {
+export async function searchLocation(query, targetMap, state, isBaseMap = false, existingFeature = null) {
     if (!query) return;
     
     // Persist search query in state
@@ -91,19 +91,27 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
     }
     
     try {
-        const resp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}`);
-        if (!resp.ok) throw new Error('Network response was not ok');
-        const data = await resp.json();
-        if (data && data.features && data.features.length > 0) {
-            const feature = data.features[0];
+        let feature = existingFeature;
+        if (!feature) {
+            const resp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}`);
+            if (!resp.ok) throw new Error('Network response was not ok');
+            const data = await resp.json();
+            if (data && data.features && data.features.length > 0) {
+                feature = data.features[0];
+            }
+        }
+
+        if (feature) {
             const [lon, lat] = feature.geometry.coordinates;
             const coord = [lat, lon];
             
             // Clear old marker/boundary for the specific side only
             if (isBaseMap) {
                 if (state.searchMarkerBase) state.mapBase.removeLayer(state.searchMarkerBase);
+                if (state.searchLabelBase) state.mapBase.removeLayer(state.searchLabelBase);
             } else {
                 if (state.searchMarkerOverlay) state.mapOverlay.removeLayer(state.searchMarkerOverlay);
+                if (state.searchLabelOverlay) state.mapOverlay.removeLayer(state.searchLabelOverlay);
             }
 
             // Fetch Boundary (GeoJSON) from Nominatim
@@ -123,10 +131,8 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
                 return null;
             }
 
-            // 1. Try direct match
             boundaryGeoJSON = await tryFetchBoundary(osm_id, osm_type);
 
-            // 2. If no boundary for the specific point, try reverse lookup to find containing area
             if (!boundaryGeoJSON) {
                 try {
                     const revResp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`);
@@ -138,7 +144,6 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
                 } catch (err) { console.warn("Reverse boundary lookup failed", err); }
             }
 
-            // Styles for each layer
             const common = {
                 pane: 'boundaryPane',
                 weight: 5, 
@@ -149,7 +154,6 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
 
             const locName = feature.properties.name || query;
 
-            // --- Label Scaling Logic (Pure Sizes) ---
             let labelClasses = "text-xs font-black uppercase tracking-wider";
             if (feature.properties.extent) {
                 const [w, s, e, n] = feature.properties.extent;
@@ -164,9 +168,6 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
             if (boundaryGeoJSON && (boundaryGeoJSON.type === 'Polygon' || boundaryGeoJSON.type === 'MultiPolygon')) {
                 if (isBaseMap) {
                     state.searchMarkerBase = L.geoJSON(boundaryGeoJSON, { style: { ...common, color: '#a855f7' } }).addTo(state.mapBase);
-                    
-                    // Add Label
-                    if (state.searchLabelBase) state.mapBase.removeLayer(state.searchLabelBase);
                     state.searchLabelBase = L.marker(coord, {
                         icon: L.divIcon({
                             className: 'custom-map-label',
@@ -176,12 +177,8 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
                         }),
                         pane: 'boundaryPane'
                     }).addTo(state.mapBase);
-
                 } else {
                     state.searchMarkerOverlay = L.geoJSON(boundaryGeoJSON, { style: { ...common, color: '#3b82f6' } }).addTo(state.mapOverlay);
-                    
-                    // Add Label
-                    if (state.searchLabelOverlay) state.mapOverlay.removeLayer(state.searchLabelOverlay);
                     state.searchLabelOverlay = L.marker(coord, {
                         icon: L.divIcon({
                             className: 'custom-map-label',
@@ -210,7 +207,6 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false)
         if (wasSynced) state.syncCheckbox.checked = true;
     }
     
-    // Show clear button
     const clearBtnId = isBaseMap ? 'btn-clear-base' : 'btn-clear-overlay';
     document.getElementById(clearBtnId).classList.remove('hidden');
 
@@ -236,4 +232,53 @@ export function clearSearch(targetMap, state, isBaseMap = false) {
         document.getElementById('btn-clear-overlay').classList.add('hidden');
     }
     debouncedUpdateURL(state);
+}
+
+let suggestTimeout = null;
+export function fetchSuggestions(query, resultsDiv, targetMap, state, isBaseMap) {
+    if (suggestTimeout) clearTimeout(suggestTimeout);
+    
+    if (!query || query.length < 2) {
+        resultsDiv.innerHTML = '';
+        resultsDiv.classList.add('hidden');
+        return;
+    }
+
+    suggestTimeout = setTimeout(async () => {
+        try {
+            const resp = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=6`);
+            const data = await resp.json();
+            
+            if (data.features && data.features.length > 0) {
+                resultsDiv.innerHTML = '';
+                resultsDiv.classList.remove('hidden');
+                
+                data.features.forEach(f => {
+                    const item = document.createElement('div');
+                    item.className = "px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-sm border-b border-gray-100 last:border-0 group transition-colors";
+                    
+                    const name = f.properties.name || "";
+                    const city = f.properties.city || f.properties.state || "";
+                    const country = f.properties.country || "";
+                    const fullName = [name, city, country].filter(v => v).join(', ');
+                    
+                    item.innerHTML = `
+                        <div class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">${name}</div>
+                        <div class="text-[10px] text-gray-400 capitalize">${[city, country].filter(v => v).join(', ')}</div>
+                    `;
+                    
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        const inputId = isBaseMap ? 'search-base' : 'search-overlay';
+                        document.getElementById(inputId).value = fullName;
+                        resultsDiv.classList.add('hidden');
+                        searchLocation(fullName, targetMap, state, isBaseMap, f);
+                    };
+                    resultsDiv.appendChild(item);
+                });
+            } else {
+                resultsDiv.classList.add('hidden');
+            }
+        } catch (e) { console.error(e); }
+    }, 250); // 250ms debounce
 }
