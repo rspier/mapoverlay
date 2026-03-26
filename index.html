@@ -36,17 +36,21 @@
 </head>
 <body>
 
-    <!-- Two Maps -->
-    <div id="map-base" class="map-container"></div>
-    <div id="map-overlay" class="map-container interaction-disabled"></div>
+    <!-- Map Wrapper -->
+    <div id="map-wrapper" class="absolute inset-0 transition-all duration-300 with-sidebar">
+        <div id="map-base" class="map-container"></div>
+        <div id="map-overlay" class="map-container interaction-disabled"></div>
+    </div>
 
-    <!-- UI Panel: Modern adaptive layout managed in styles.css via pointer queries -->
-    <div id="ui-panel" class="control-panel fixed bg-white/95 backdrop-blur-sm shadow-2xl border-gray-200 p-4 overflow-y-auto overflow-x-hidden transition-all duration-300">
+    <!-- Sidebar Dashboard -->
+    <div id="sidebar-container" class="fixed top-0 bottom-0 left-0 z-[9999] pointer-events-none transition-all duration-300 with-sidebar">
         
-        <!-- Mobile/Tablet Grab Handle -->
-        <button id="btn-handle" class="w-full py-2 mb-2 show-on-drawer-only flex justify-center focus:outline-none" title="Toggle Drawer">
-            <div class="h-1.5 w-12 bg-gray-300 rounded-full hover:bg-gray-400 transition-colors"></div>
-        </button>
+        <div id="ui-panel" class="control-panel absolute top-0 bottom-0 left-0 w-full bg-white/95 backdrop-blur-sm shadow-2xl border-gray-200 p-4 overflow-y-auto transition-transform duration-300 pointer-events-auto">
+            
+            <!-- Mobile/Tablet Grab Handle (Hidden on Desktop) -->
+            <button id="btn-handle" class="w-full py-2 mb-2 show-on-drawer-only flex justify-center focus:outline-none" title="Toggle Drawer">
+                <div class="h-1.5 w-12 bg-gray-300 rounded-full hover:bg-gray-400 transition-colors"></div>
+            </button>
 
         <!-- Header -->
         <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
@@ -69,13 +73,6 @@
                 <button id="btn-swap" class="text-xs flex items-center gap-1 text-gray-600 hover:text-gray-800 font-medium bg-gray-50 hover:bg-gray-100 px-2 py-1 rounded transition-colors" title="Swap Layers">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                    </svg>
-                </button>
-                
-                <!-- Collapse Button (Desktop Only) -->
-                <button id="btn-collapse" class="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors hidden lg:block">
-                    <svg id="icon-collapse" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
             </div>
@@ -198,6 +195,14 @@
             <span class="text-gray-400 font-medium lg:block">Tip: Ctrl + Drag for other map, Alt + Drag to rotate.</span>
         </div>
     </div>
+
+    <!-- Sidebar Handle (Desktop Only) -->
+    <button id="btn-collapse" class="absolute right-[-3rem] top-4 w-12 h-12 bg-white text-gray-500 hover:text-blue-600 flex items-center justify-center rounded-r-xl border border-gray-200 border-l-0 shadow-xl transition-colors pointer-events-auto hidden md:flex" title="Toggle Sidebar">
+        <svg id="icon-collapse" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="transform: rotate(90deg)">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+</div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

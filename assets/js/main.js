@@ -119,7 +119,7 @@ function initApp() {
     mapFuncs.setupSync(mapBase, mapOverlay, state);
     mapFuncs.setupCustomDrag(mapBase, mapOverlay, state);
     ui.setControlMode('overlay', state);
-    ui.setupDrawerSwipe(state.uiPanel, state.btnHandle, state.iconCollapse);
+    ui.setupDrawerSwipe(state);
 
     // Initial Searches from URL
     if (params.has('sb')) {
@@ -160,7 +160,7 @@ mapOverlay.on('moveend zoomend', () => utils.debouncedUpdateURL(state));
 // Button Handlers
 document.getElementById('btn-share').onclick = () => utils.copyShareLink(state);
 document.getElementById('btn-swap').onclick = () => ui.swapLayers(state, tileProviders, mapBase, mapOverlay, mapFuncs);
-document.getElementById('btn-collapse').onclick = () => ui.toggleSidebar(state.uiPanel, state.iconCollapse);
+document.getElementById('btn-collapse').onclick = () => ui.toggleSidebar(state);
 document.getElementById('ctrl-base').onclick = () => ui.setControlMode('base', state);
 document.getElementById('ctrl-overlay').onclick = () => ui.setControlMode('overlay', state);
 
@@ -195,7 +195,7 @@ document.getElementById('btn-go-overlay').onclick = () => {
 };
 
 // Drawer Handle Interaction
-document.getElementById('btn-handle').onclick = () => ui.toggleSidebar(state.uiPanel, state.iconCollapse);
+document.getElementById('btn-handle').onclick = () => ui.toggleSidebar(state);
 
 // Clear Search Buttons
 document.getElementById('btn-clear-base').onclick = () => utils.clearSearch(mapBase, state, true);

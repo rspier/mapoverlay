@@ -1,14 +1,41 @@
-export function toggleSidebar(uiPanel, iconCollapse) {
+export function toggleSidebar(state) {
+    const { uiPanel, iconCollapse, mapBase, mapOverlay } = state;
+    const sidebarContainer = document.getElementById('sidebar-container');
     const isCollapsed = uiPanel.classList.toggle('collapsed');
-    if (iconCollapse) {
-        iconCollapse.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+    
+    if (sidebarContainer) {
+        sidebarContainer.classList.toggle('collapsed', isCollapsed);
     }
+
+    const mapWrapper = document.getElementById('map-wrapper');
+    
+    if (mapWrapper) {
+        mapWrapper.classList.toggle('with-sidebar', !isCollapsed);
+    }
+
+    if (iconCollapse) {
+        const isDesktop = window.innerWidth >= 768;
+        if (isDesktop) {
+            iconCollapse.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(90deg)';
+        } else {
+            iconCollapse.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    // Invalidate map size after transition
+    setTimeout(() => {
+        if (mapBase) mapBase.invalidateSize();
+        if (mapOverlay) mapOverlay.invalidateSize();
+    }, 310);
 }
 
 /**
  * Setup swipe gesture for the drawer (mobile only)
  */
-export function setupDrawerSwipe(uiPanel, handle, iconCollapse) {
+export function setupDrawerSwipe(state) {
+    const { uiPanel, btnHandle: handle, iconCollapse } = state;
+    if (!handle || !uiPanel) return;
+
     let startY = 0;
     let currentY = 0;
     let isDragging = false;
@@ -16,7 +43,7 @@ export function setupDrawerSwipe(uiPanel, handle, iconCollapse) {
 
     const onStart = (e) => {
         // Desktop check - usually handle is hidden on desktop anyway
-        if (window.innerWidth >= 1024 && window.matchMedia('(pointer: fine)').matches) return;
+        if (window.innerWidth >= 768) return;
         
         // If clicking on a range slider or select, don't start a drag
         if (e.target.tagName === 'INPUT' && e.target.type === 'range') return;
@@ -80,14 +107,12 @@ export function setupDrawerSwipe(uiPanel, handle, iconCollapse) {
         if (isCollapsed) {
             // Check if we swiped up to open
             if (isSwipeSuccess && diff < 0) {
-                uiPanel.classList.remove('collapsed');
-                if (iconCollapse) iconCollapse.style.transform = 'rotate(0deg)';
+                toggleSidebar(state); // Use common logic
             }
         } else {
             // Check if we swiped down to close
             if (isSwipeSuccess && diff > 0) {
-                uiPanel.classList.add('collapsed');
-                if (iconCollapse) iconCollapse.style.transform = 'rotate(180deg)';
+                toggleSidebar(state); // Use common logic
             }
         }
 
