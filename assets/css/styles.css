@@ -85,8 +85,8 @@ html, body {
     overflow: hidden;
 }
 
-/* Sidebar Mode: For desktop and tablets */
-@media (min-width: 768px) {
+/* Sidebar Mode: Only for large screens with a precise pointer (Mouse) */
+@media (min-width: 1024px) and (pointer: fine) {
     #sidebar-container {
         pointer-events: none;
     }

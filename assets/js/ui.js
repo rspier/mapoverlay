@@ -14,7 +14,7 @@ export function toggleSidebar(state) {
     }
 
     if (iconCollapse) {
-        const isDesktop = window.innerWidth >= 768;
+        const isDesktop = window.innerWidth >= 1024 && window.matchMedia('(pointer: fine)').matches;
         if (isDesktop) {
             iconCollapse.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(90deg)';
         } else {
@@ -43,7 +43,7 @@ export function setupDrawerSwipe(state) {
 
     const onStart = (e) => {
         // Desktop check - usually handle is hidden on desktop anyway
-        if (window.innerWidth >= 768) return;
+        if (window.innerWidth >= 1024 && window.matchMedia('(pointer: fine)').matches) return;
         
         // If clicking on a range slider or select, don't start a drag
         if (e.target.tagName === 'INPUT' && e.target.type === 'range') return;
