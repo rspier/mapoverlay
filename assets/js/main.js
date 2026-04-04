@@ -40,10 +40,13 @@ const state = {
     btnHandle: document.getElementById('btn-handle'),
     searchMarkerBase: null,
     searchMarkerOverlay: null,
+    searchMarkerScaled: null,
     searchLabelBase: null,
     searchLabelOverlay: null,
+    searchLabelScaled: null,
     searchQueryBase: "",
     searchQueryOverlay: "",
+    overlayGeoJSON: null,
 };
 
 // Initialize Maps
@@ -154,8 +157,14 @@ state.rangeRot.oninput = (e) => {
 state.filterSelect.onchange = () => mapFuncs.applyOverlayFilter(state);
 state.syncCheckbox.onchange = () => utils.debouncedUpdateURL(state);
 
-mapBase.on('moveend zoomend', () => utils.debouncedUpdateURL(state));
-mapOverlay.on('moveend zoomend', () => utils.debouncedUpdateURL(state));
+mapBase.on('move moveend zoom zoomend', () => {
+    utils.debouncedUpdateURL(state);
+    utils.updateScaledOutline(state);
+});
+mapOverlay.on('move moveend zoom zoomend', () => {
+    utils.debouncedUpdateURL(state);
+    utils.updateScaledOutline(state);
+});
 
 // Button Handlers
 document.getElementById('btn-share').onclick = () => utils.copyShareLink(state);

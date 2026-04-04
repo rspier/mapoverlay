@@ -178,6 +178,7 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false,
                         pane: 'boundaryPane'
                     }).addTo(state.mapBase);
                 } else {
+                    state.overlayGeoJSON = boundaryGeoJSON;
                     state.searchMarkerOverlay = L.geoJSON(boundaryGeoJSON, { style: { ...common, color: '#3b82f6' } }).addTo(state.mapOverlay);
                     state.searchLabelOverlay = L.marker(coord, {
                         icon: L.divIcon({
@@ -189,6 +190,7 @@ export async function searchLocation(query, targetMap, state, isBaseMap = false,
                         pane: 'boundaryPane'
                     }).addTo(state.mapOverlay);
                 }
+                updateScaledOutline(state);
             }
 
             if (wasSynced) {
@@ -225,13 +227,75 @@ export function clearSearch(targetMap, state, isBaseMap = false) {
     } else {
         if (state.searchMarkerOverlay) state.mapOverlay.removeLayer(state.searchMarkerOverlay);
         if (state.searchLabelOverlay) state.mapOverlay.removeLayer(state.searchLabelOverlay);
+        if (state.searchMarkerScaled) state.mapOverlay.removeLayer(state.searchMarkerScaled);
+        if (state.searchLabelScaled) state.mapOverlay.removeLayer(state.searchLabelScaled);
         state.searchMarkerOverlay = null;
         state.searchLabelOverlay = null;
+        state.searchMarkerScaled = null;
+        state.searchLabelScaled = null;
+        state.overlayGeoJSON = null;
         state.searchQueryOverlay = "";
         document.getElementById('search-overlay').value = "";
         document.getElementById('btn-clear-overlay').classList.add('hidden');
     }
     debouncedUpdateURL(state);
+}
+
+export function updateScaledOutline(state) {
+    if (!state.overlayGeoJSON || !state.mapBase || !state.mapOverlay) return;
+
+    // Get current center latitudes
+    const latOverlay = state.mapOverlay.getCenter().lat;
+    const latBase = state.mapBase.getCenter().lat;
+    
+    // Mercator calculation: scale = 1 / cos(lat)
+    // Factor to Scale overlay up to match base: cos(latOverlay) / cos(latBase)
+    const factor = Math.cos(latOverlay * Math.PI / 180) / Math.cos(latBase * Math.PI / 180);
+    
+    // Only proceed if factor is meaningful
+    if (isNaN(factor) || Math.abs(factor - 1) < 0.001 && state.searchMarkerScaled) {
+        // If they are identical, remove scaled unless we want to keep it?
+        // Let's keep it to show they match.
+    }
+
+    if (state.searchMarkerScaled) state.mapOverlay.removeLayer(state.searchMarkerScaled);
+    if (state.searchLabelScaled) {
+        state.mapOverlay.removeLayer(state.searchLabelScaled);
+        state.searchLabelScaled = null;
+    }
+
+    // Scale the GeoJSON
+    const feature = state.overlayGeoJSON;
+    const center = L.latLngBounds(L.geoJSON(feature).getBounds()).getCenter();
+    const pCenter = L.Projection.SphericalMercator.project(center);
+
+    const scaledGeoJSON = JSON.parse(JSON.stringify(feature));
+    
+    function scaleRecursive(coords) {
+        if (typeof coords[0] === 'number') {
+            const p = L.Projection.SphericalMercator.project(L.latLng(coords[1], coords[0]));
+            const newX = pCenter.x + (p.x - pCenter.x) * factor;
+            const newY = pCenter.y + (p.y - pCenter.y) * factor;
+            const newLL = L.Projection.SphericalMercator.unproject(L.point(newX, newY));
+            return [newLL.lng, newLL.lat];
+        } else {
+            return coords.map(c => scaleRecursive(c));
+        }
+    }
+    scaledGeoJSON.coordinates = scaleRecursive(scaledGeoJSON.coordinates);
+
+    // Style for the "fair comparison" (True Scale) outline
+    const style = {
+        pane: 'boundaryPane',
+        weight: 5,
+        opacity: 0.8,
+        color: '#f97316', // Orange
+        dashArray: '10, 10',
+        fillColor: 'transparent',
+        fillOpacity: 0
+    };
+
+    state.searchMarkerScaled = L.geoJSON(scaledGeoJSON, { style }).addTo(state.mapOverlay);
 }
 
 let suggestTimeout = null;
