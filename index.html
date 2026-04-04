@@ -47,10 +47,12 @@
         
         <div id="ui-panel" class="control-panel fixed bottom-0 left-0 right-0 w-full max-h-[80vh] bg-white/95 backdrop-blur-sm shadow-2xl border-gray-200 p-4 overflow-y-auto transition-transform duration-300 pointer-events-auto lg:absolute lg:top-0 lg:bottom-0 lg:left-0 lg:max-h-none h-full">
             
-            <!-- Mobile/Tablet Grab Handle (Hidden on Desktop) -->
-            <button id="btn-handle" class="w-full py-2 mb-2 show-on-drawer-only flex justify-center focus:outline-none" title="Toggle Drawer">
-                <div class="h-1.5 w-12 bg-gray-300 rounded-full hover:bg-gray-400 transition-colors"></div>
-            </button>
+            <!-- Mobile/Tablet Grab Handle (Pinned to top on scroll) -->
+            <div class="sticky top-0 z-[100] bg-white/95 backdrop-blur-sm -mt-4 -mx-4 mb-2 border-b border-gray-100 show-on-drawer-only">
+                <button id="btn-handle" class="w-full py-3 flex justify-center focus:outline-none" title="Toggle Drawer">
+                    <div class="h-1.5 w-12 bg-gray-300 rounded-full hover:bg-gray-400 transition-colors"></div>
+                </button>
+            </div>
 
         <!-- Header -->
         <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
